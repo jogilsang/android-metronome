@@ -1,0 +1,138 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 26
+
+    def buildDateTime = new Date().format('yyMMddHHmm').toInteger()
+
+
+    defaultConfig {
+        applicationId "jgs.com.jogilsang.begginer"
+        minSdkVersion 25
+        targetSdkVersion 26
+        versionCode 1
+        //versionCode buildDateTime
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+
+        // 개발 단계
+        debug {
+            // fabric 해제
+            ext.alwaysUpdateBuildId = false
+
+            // ext.enableCrashlytics = false
+        }
+
+        // 배포 단계
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    // apk 파일 생성시 쪼개기
+//    splits {
+//        abi {
+//            enable true
+//            reset()
+//            include 'x86', 'x86_64', 'armeabi-v7a', 'arm64-v8a'
+//            universalApk false
+//        }
+//    }
+
+    // build variant 조절하기
+    android.variantFilter { variant ->
+        def buildName = variant.buildType.name;
+        def flavorName = variant.getFlavors().get(0).name;
+
+        if (flavorName == 'dev' && buildName == 'release'
+                || flavorName == 'prd' && buildName == 'debug') {
+            variant.setIgnore(true);
+        }
+
+        splits.abi.enable = (flavorName == 'prd');
+    }
+
+
+    flavorDimensions "stage", "mode"
+    productFlavors {
+
+        dev {
+
+            manifestPlaceholders = [ appLabel: "Flavor(dev)" ]
+
+            buildConfigField 'boolean', 'IS_DEV', "true"
+
+            dimension "stage"
+            minSdkVersion 21
+
+            // 계속 새로 갱신이 되면서 Manifest가 변경되고 이는 빌드시간을 증가시키는 원인
+
+            versionCode 100
+
+            // resource를 특정 언어와 해상도로 고정
+            // PNG를 최적화하는 기능을 끄면
+            aaptOptions.cruncherEnabled = false
+            resConfigs "ko", "xxxhdpi"
+        }
+        prd {
+
+            buildConfigField 'boolean', 'IS_FREE', "false"
+
+            manifestPlaceholders = [ appLabel: "Flavor(prd)" ]
+
+            dimension "stage"
+            versionCode new Date().format('yyMMddHHmm').toInteger()
+        }
+
+        free {
+
+            manifestPlaceholders = [ appLabel: "Flavor(Free)" ]
+            buildConfigField 'boolean', 'IS_FREE', "true"
+            dimension "mode"
+            applicationIdSuffix ".free"
+            versionCode 1
+            versionName "1.0.0"
+
+
+        }
+
+        paid {
+
+            manifestPlaceholders = [ appLabel: "Flavor(Paid)" ]
+            buildConfigField 'boolean', 'IS_FREE', "false"
+            dimension "mode"
+            applicationIdSuffix ".paid"
+            versionCode 2
+            versionName "1.0.1"
+        }
+    }
+    //출처: http://gun0912.tistory.com/74 [박상권의 삽질블로그]
+
+    // 소스코드상에서 아래처럼 사용할수있음
+    //    if(BuildConfig.IS_FREE){
+    //        // 무료앱
+    //        // 광고 보여주기
+    //    }else{
+    //        // 유료앱
+    //        // 광고 보여주지 않기
+    //    }
+
+}
+
+
+
+dependencies {
+
+    implementation 'eu.the4thfloor.volley:com.android.volley:2015.05.28'
+    //[출처] [Android] Volley를 사용한 서버와 통신 방법|작성자 연금술사
+
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'com.android.support:appcompat-v7:26.1.0'
+    implementation 'com.android.support.constraint:constraint-layout:1.1.3'
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+}
